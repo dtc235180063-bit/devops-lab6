@@ -1,0 +1,75 @@
+================================================================================
+BÀI BÁO CÁO NỘP BÀI THỰC HÀNH LAB 6
+HỌC PHẦN: VẬN HÀNH VÀ BẢO TRÌ PHẦN MỀM (DEVOPS - 2026)
+================================================================================
+
+1. THÔNG TIN SINH VIÊN
+- Họ và tên sinh viên : Nguyễn Văn Hải
+- Mã số sinh viên     : DTC235180063
+- Lớp sinh hoạt       : KTPMK22C
+- Khoa                : Công nghệ Thông tin
+- Trường              : Trường Đại học Công nghệ Thông tin và Truyền thông (ICTU)
+- Email sinh viên     : dtc235180063@ictu.edu.vn
+
+2. THÔNG TIN BÀI THỰC HÀNH
+- Tên bài thực hành   : Lab 6 — Kiểm thử & Phân tích Mã nguồn Tĩnh trong DevOps
+- Chuẩn đầu ra (CDR)  : CDR 6.2 — Vận dụng nguyên lý kiểm thử trong DevOps (Mức Bloom: Vận dụng)
+- GitHub Repository   : https://github.com/dtc235180063-bit/devops-lab6
+- Công cụ sử dụng     : Postman/Newman CLI (v6.2.3), OWASP ZAP (v2.15 DAST), SonarQube (SAST), Node.js (v20+), Express.js, Git (v2.x)
+- Ngày hoàn thành     : 12/11/2026
+
+3. TỔNG HỢP KẾT QUẢ THỰC HIỆN 3 LOẠI KIỂM THỬ
+
+[A] KIỂM THỬ CHỨC NĂNG API (FUNCTIONAL TESTING — POSTMAN + NEWMAN CLI):
+- Sample API          : Node.js Express server (`server.js`) chạy tại http://localhost:3000
+- Collection Tests    : `Student-API-Tests.json` (5 requests, 12 assertions)
+  1. GET /api/students        : Status 200, success=true, data=Array, length >= 3, responseTime < 200ms (PASS)
+  2. GET /api/students/SV001  : Status 200, returns Nguyen Van A (PASS)
+  3. POST /api/students       : Status 201, returns Pham Thi D (PASS)
+  4. GET /api/students/SV999  : Status 404, success=false (PASS)
+  5. POST /api/students       : Status 400 validation missing id/name (PASS)
+- Kết quả Newman CLI  : 5/5 requests executed, 0 failed; 12/12 assertions passed (100% PASS).
+- Xuất báo cáo        : `newman-report.json`
+
+[B] KIỂM THỬ BẢO MẬT ĐỘNG (DAST — OWASP ZAP):
+- Target Attack URL   : http://localhost:3000
+- Phương thức scan    : Spider crawling tự động + Active Scan tấn công payload
+- Tổng số Alerts      : 5 Alerts tìm thấy
+  1. High   : Cross Site Scripting (Reflected) tại `/api/search?q=<script>` (CWE-79, WASC-8)
+  2. Medium : X-Frame-Options Header Not Set trên toàn bộ API (CWE-1021 - Clickjacking)
+  3. Medium : Content Security Policy (CSP) Header Not Set (CWE-693)
+  4. Low    : Server Leaks Information (/api/debug lộ process.env, memory) (CWE-200)
+  5. Low    : Server Leaks Information via "X-Powered-By: Express" header
+- Xuất báo cáo        : `zap-report.html`
+
+[C] PHÂN TÍCH MÃ NGUỒN TĨNH (SAST — SONARQUBE):
+- Cấu hình Sonar      : `sonar-project.properties` (Project key: devops-lab6)
+- Phân tích cú pháp   : SonarScanner phân tích AST mã nguồn `server.js` không cần chạy code
+- Kết quả Dashboard   :
+  + Quality Gate      : PASSED
+  + Reliability       : 0 Bugs (Rating A)
+  + Security          : 0 Vulnerabilities (Rating A)
+  + Security Hotspots : 2 Hotspots (100% Reviewed)
+  + Maintainability   : 3 Code Smells (Technical Debt: 12 phút, Rating A)
+  + Duplications      : 0.0% (0 lines duplicated)
+
+[D] TỰ ĐỘNG HÓA CI TESTING PIPELINE:
+- Tích hợp 4 Stages vào kịch bản tự động hóa (`ci-test.sh` và `ci-test.ps1`):
+  + Stage 1: SAST — SonarQube Static Analysis (sonar-scanner)
+  + Stage 2: Start API Server (`node server.js &`)
+  + Stage 3: API Functional Testing (`newman run Student-API-Tests.json`)
+  + Stage 4: DAST — OWASP ZAP Security Scan (ZAP REST API + Export HTML)
+
+4. DANH MỤC MINH CHỨNG (SCREENSHOTS):
+- 01-newman-pass.png           : Kết quả chạy Newman CLI đạt 5/5 requests, 12/12 assertions PASS
+- 02-zap-alerts.png            : Tab Alerts của OWASP ZAP phát hiện 5 lỗ hổng (1 High XSS, 2 Medium, 2 Low)
+- 03-sonarqube-dashboard.png   : Dashboard tổng quan SonarQube Quality Gate PASSED, xếp hạng A
+- 04-sonarqube-issues.png      : Danh sách chi tiết các vấn đề (Issues & Security Hotspots) trong server.js
+- 05-comparison-table.png      : Bảng đối sánh chuyên sâu 3 loại kiểm thử trong vòng đời DevOps
+
+5. KẾT LUẬN VỀ SHIFT-LEFT TESTING TRONG DEVOPS:
+- SAST (SonarQube) chạy sớm nhất (trước build) giúp lập trình viên sửa lỗi cú pháp & code smell ngay tại local.
+- Functional Testing (Postman/Newman) đảm bảo tính đúng đắn về mặt nghiệp vụ và API Contract sau khi build/deploy.
+- DAST (OWASP ZAP) kiểm thử lỗ hổng bảo mật thời gian thực trong môi trường runtime.
+- Cả 3 phương pháp đều cần thiết và bổ trợ lẫn nhau, tạo thành lưới an toàn vững chắc cho quy trình CI/CD.
+================================================================================
